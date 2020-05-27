@@ -1,0 +1,30 @@
+#! /usr/bin/awk -f
+BEGIN{
+ for(i=1;i<=20;i++){
+  min[i]=9999999999;
+ }
+ FS=","
+}
+NR==1{
+ split($0,a,":")
+ last=a[2]
+}
+NR>1{
+ for(i=2;i<=NF;i++){
+  if(max[i]<$i){
+   max[i]=$i;
+  }
+  if(min[i]>$i){
+   min[i]=$i;
+  }
+ }
+}
+NR==4{
+  line_length=NF;
+}
+END{
+ for(i=2;i<=line_length;i++){
+  print(i,min[i],max[i],(min[i]-min[i-1]))
+ }
+ print(last,last-min[line_length])
+}
