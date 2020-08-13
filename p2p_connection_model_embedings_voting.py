@@ -80,10 +80,12 @@ def layer_str(embeding_output, *layers):
   return ret_layer_str
 
 
-baseFileName = "111111111111"
+baseFileName = "1010rr1101rr10"
 core = "3"
 prefix = ""
 isTestV4 = False
+isCreatePredictionForSimulator = False
+predictionSamplesDFileBaseName = "1010rr1101rr10network100000"
 isRandomForestInputFile = False
 randomForestInputFile = ""
 isTensorflow1InputFile = False
@@ -101,18 +103,25 @@ if len(sys.argv) > 4:
   isTestV4 = True
   testSinceSet = int(sys.argv[4]) - 1
 if len(sys.argv) > 5:
-  isRandomForestInputFile = True
-  randomForestInputFile = str(sys.argv[5])
+  isCreatePredictionForSimulator = True
+  predictionSamplesDFileName = str(sys.argv[5])
 if len(sys.argv) > 6:
-  isTensorflow1InputFile = True
-  tensorflow1InputFile = str(sys.argv[6])
+  isRandomForestInputFile = True
+  randomForestInputFile = str(sys.argv[6])
 if len(sys.argv) > 7:
+  isTensorflow1InputFile = True
+  tensorflow1InputFile = str(sys.argv[7])
+if len(sys.argv) > 8:
   isTensorflow2InputFile = True
-  tensorflow2InputFile = str(sys.argv[7])
+  tensorflow2InputFile = str(sys.argv[8])
 
 os.environ["CUDA_VISIBLE_DEVICES"] = core
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 fileResults = open(prefix + "" + baseFileName + ".results", "w")
+
+
+Z_File = load_svmlight_file("" + predictionSamplesDFileBaseName + ".svmlight")
+Z_test_svmlight = pd.DataFrame(Z_File.todense())
 
 np.random.seed(0)
 X, y = load_svmlight_file("dataset/" + baseFileName + ".svmlight")
@@ -122,7 +131,7 @@ print(str(X_df.shape), str(y_df.shape), file=fileResults)
 # NUMBER_OF_TRAINING_SET_SIZE = 178778 # v1
 # NUMBER_OF_TRAINING_SET_SIZE = 178684 # v2
 NUMBER_OF_TRAINING_SET_SIZE = 178641  # v3
-NUMBER_OF_TEST_SET_SIZES = [8953, 9204, 8473, 8094, 10854]  # v3
+NUMBER_OF_TEST_SET_SIZES = [8953, 9204, 8473, 8094, 10854,47871]  # v3
 if isTestV4 == True:
     if testSinceSet > len(NUMBER_OF_TEST_SET_SIZES) - 1:
         testSinceSet = len(NUMBER_OF_TEST_SET_SIZES) - 1
@@ -241,7 +250,7 @@ recall_rf_train2 = recall_score(y_train, predictions_rf_train2)
 #auc_rf_train2 = auc(fpr_rf_train2, tpr_rf_train)
 print('RandomForestTrain2',accuracy_rf_train2,f1_rf_train2,precision_rf_train2,recall_rf_train2,file=fileResults)
 '''
-
+Z_pred_rf = rf2.predict(Z_test_svmlight)
 y_pred_rf_valid2 = rf2.predict(x_validation)
 predictions_rf_valid2 = y_pred_rf_valid2
 accuracy_rf_valid2= accuracy_score(y_validation, predictions_rf_valid2)
@@ -294,6 +303,8 @@ sess = tf.compat.v1.Session(config=config)
 with sess.as_default():
   tf.set_random_seed(0)
   np.random.seed(0)
+
+  Z_test_csv = pd.read_csv("" + predictionSamplesDFileBaseName + ".csv", header=None)
 
   X_df = pd.read_csv("dataset/" + baseFileName + ".csv", header=None, skiprows=1)
   y_df = X_df[0]
@@ -474,6 +485,7 @@ with sess.as_default():
                          verbose=1,
                          validation_data=(x_validation, y_validation))
     model1.load_weights(checkpoint_file_path)
+  Z_pred_keras = model1.predict(Z_test_csv).reval()
   y_pred_keras_validation = model1.predict(x_validation).ravel()
   y_pred_keras_test = []
   #fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_keras)
@@ -552,6 +564,7 @@ with sess.as_default():
                          epochs=epochs,
                          verbose=1,
                          validation_data=(x_validation, y_validation))
+  Z_pred_keras2 = model2.predict(Z_test_csv).ravel()
   y_pred_keras2_validation = model2.predict(x_validation).ravel()
   y_pred_keras2_test = []
   #fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_keras2)
@@ -571,6 +584,14 @@ with sess.as_default():
     i += 1
   print(out_str, file=fileResults)
 
+  pred_array_Z = np.row_stack([Z_pred_keras,Z_pred_keras2,Z_test_csv])
+  pred_array_Z = pred_array_Z.mean(axis=0)
+  pred_array_Z = pred_array_Z.round()
+  fileToPrintZ = open(predictionSamplesDFileBaseName+prefix+'prediction.out', "a+", encoding="utf-8")
+  for prediction in pred_array_Z :
+    fileToPrintZ.write(''+str(prediction)+'\n')
+  fileToPrintZ.close()
+  
   pred_array_valid = np.row_stack([y_pred_keras_validation, y_pred_keras2_validation, y_pred_rf_valid2])
   pred_array_valid = pred_array_valid.mean(axis=0)
   pred_array_valid = pred_array_valid.round()
