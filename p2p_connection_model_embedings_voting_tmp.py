@@ -106,195 +106,16 @@ if len(sys.argv) > 5:
   isCreatePredictionForSimulator = True
   predictionSamplesDFileBaseName = str(sys.argv[5])
 if len(sys.argv) > 6:
-  isRandomForestInputFile = True
-  randomForestInputFile = str(sys.argv[6])
-if len(sys.argv) > 7:
   isTensorflow1InputFile = True
-  tensorflow1InputFile = str(sys.argv[7])
-if len(sys.argv) > 8:
+  tensorflow1InputFile = str(sys.argv[6])
+if len(sys.argv) > 7:
   isTensorflow2InputFile = True
-  tensorflow2InputFile = str(sys.argv[8])
+  tensorflow2InputFile = str(sys.argv[7])
 
 os.environ["CUDA_VISIBLE_DEVICES"] = core
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 fileResults = open(prefix + "" + baseFileName + ".results", "w")
 
-#print("" + predictionSamplesDFileBaseName + ".svmlight")
-if isCreatePredictionForSimulator == True :
-  Z_File, z_y = load_svmlight_file("" + predictionSamplesDFileBaseName + ".svmlight")
-  Z_test_svmlight = pd.DataFrame(Z_File.todense())
-
-np.random.seed(0)
-X, y = load_svmlight_file("dataset/" + baseFileName + ".svmlight")
-X_df = pd.DataFrame(X.todense())
-y_df = pd.DataFrame(y)
-print(str(X_df.shape), str(y_df.shape), file=fileResults)
-# NUMBER_OF_TRAINING_SET_SIZE = 178778 # v1
-# NUMBER_OF_TRAINING_SET_SIZE = 178684 # v2
-NUMBER_OF_TRAINING_SET_SIZE = 178641  # v3
-NUMBER_OF_TEST_SET_SIZES = [8953, 9204, 8473, 8094, 10854,47871]  # v3
-if isTestV4 == True:
-    if testSinceSet > len(NUMBER_OF_TEST_SET_SIZES) - 1:
-        testSinceSet = len(NUMBER_OF_TEST_SET_SIZES) - 1
-    sum = 0
-    i = 0
-    for size in NUMBER_OF_TEST_SET_SIZES:
-        if i == testSinceSet:
-            break
-        sum += size
-        i += 1
-    NUMBER_OF_TRAINING_SET_SIZE += sum
-X_df_train = X_df.head(NUMBER_OF_TRAINING_SET_SIZE)
-y_df_train = y_df.head(NUMBER_OF_TRAINING_SET_SIZE)
-msk = np.random.rand(len(X_df_train)) < 0.95  # 0.8
-y_train = y_df_train[msk]
-x_train = X_df_train[msk]
-y_validation = y_df_train[~msk]
-x_validation = X_df_train[~msk]
-print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_validation.shape), file=fileResults)
-NUMBER_OF_TEST_SET_SIZE = X_df.shape[0] - NUMBER_OF_TRAINING_SET_SIZE
-x_df_test = X_df.tail(NUMBER_OF_TEST_SET_SIZE)
-y_df_test = y_df.tail(NUMBER_OF_TEST_SET_SIZE)
-# NUMBER_OF_TEST_SET_SIZES = [37092] # v1
-# NUMBER_OF_TEST_SET_SIZES = [18114, 19072] # v2
-
-x_test = []
-y_test = []
-sum_of_test_sets_sizes = 0
-i = 0
-for number_of_test_set_size in NUMBER_OF_TEST_SET_SIZES:
-    if isTestV4 == True and i < testSinceSet:
-        i += 1
-        continue
-    sum_of_test_sets_sizes += number_of_test_set_size
-    x_test.append(x_df_test.head(sum_of_test_sets_sizes).tail(number_of_test_set_size))
-    y_test.append(y_df_test.head(sum_of_test_sets_sizes).tail(number_of_test_set_size))
-    # print(str(x_test[i].shape),str(y_test[i].shape))
-
-'''
-# Create Decision Tree classifer object
-clf = DecisionTreeClassifier()
-# Train Decision Tree Classifer
-clf = clf.fit(x_train,y_train.values.ravel())
-#Predict the response for test dataset
-y_pred_dt = clf.predict(x_test)
-predictions_dt = y_pred_dt
-#predictions = [round(value) for value in y_pred]
-# evaluate predictions
-accuracy_dt= accuracy_score(y_test, predictions_dt)
-f1_dt= f1_score(y_test, predictions_dt)
-precision_dt = precision_score(y_test, predictions_dt)
-fpr_dt, tpr_dt, thresholds_xgb = roc_curve(y_test, y_pred_dt)
-auc_dt = auc(fpr_dt, tpr_dt)
-print('DecisionTree',accuracy_dt,f1_dt,precision_dt,auc_dt,file=fileResults)
-
-model_xgb = XGBClassifier()
-model_xgb.fit(x_train, y_train.values.ravel())
-# make predictions for test data
-y_pred_xgb = model_xgb.predict(x_test)
-predictions_xgb = y_pred_xgb
-#predictions = [round(value) for value in y_pred]
-# evaluate predictions
-accuracy_xgb= accuracy_score(y_test, predictions_xgb)
-f1_xgb= f1_score(y_test, predictions_xgb)
-precision_xgb = precision_score(y_test, predictions_xgb)
-fpr_xgb, tpr_xgb, thresholds_xgb = roc_curve(y_test, y_pred_xgb)
-auc_xgb = auc(fpr_xgb, tpr_xgb)
-print('XGBoost', accuracy_xgb,f1_xgb,precision_xgb,auc_xgb ,file=fileResults)
-'''
-'''
-rf = RandomForestClassifier(max_depth=100, n_estimators=2000,max_features=0.3)
-rf.fit(x_train, y_train.values.ravel())
-y_pred_rf_train = rf.predict(x_train)
-predictions_rf_train = y_pred_rf_train
-accuracy_rf_train= accuracy_score(y_train, predictions_rf_train)
-f1_rf_train= f1_score(y_train, predictions_rf_train)
-precision_rf_train = precision_score(y_train, predictions_rf_train)
-recall_rf_train = recall_score(y_train, predictions_rf_train)
-fpr_rf_train, tpr_rf_train, thresholds_rf_train = roc_curve(y_train, y_pred_rf_train)
-auc_rf_train = auc(fpr_rf_train, tpr_rf_train)
-print('RandomForestTrain',accuracy_rf_train,f1_rf_train,precision_rf_train,recall_rf_train,auc_rf_train ,file=fileResults)
-y_pred_rf = rf.predict(x_test)
-predictions_rf = y_pred_rf
-accuracy_rf= accuracy_score(y_test, predictions_rf)
-f1_rf= f1_score(y_test, predictions_rf)
-precision_rf = precision_score(y_test, predictions_rf)
-recall_rf = recall_score(y_test, predictions_rf)
-fpr_rf, tpr_rf, thresholds_rf = roc_curve(y_test, y_pred_rf)
-auc_rf = auc(fpr_rf, tpr_rf)
-print('RandomForestTest',accuracy_rf,f1_rf,precision_rf,recall_rf,auc_rf ,file=fileResults)
-'''
-
-if isRandomForestInputFile == True and randomForestInputFile != "" :
-    rf2 = load(randomForestInputFile)
-else :
-    parameter_max_depth = {
-        "1010rr1101rr10": 85,
-        "0000rr1101rr10": 85,
-        "0000rr1101r010": 85,
-        "0000001101r010": 70
-    }
-    if baseFileName in parameter_max_depth :
-        max_depth = parameter_max_depth.get(baseFileName)
-    else :
-        max_depth = 85
-    rf2 = RandomForestClassifier(max_depth=max_depth, n_estimators=1500,max_features="log2")
-    rf2.fit(x_train, y_train.values.ravel())
-    dump(rf2, 'rf' + str(max_depth) + "-" + baseFileName + '.joblib')
-
-'''
-y_pred_rf_train2 = rf2.predict(x_train)
-predictions_rf_train2 = y_pred_rf_train2
-accuracy_rf_train2= accuracy_score(y_train, predictions_rf_train2)
-f1_rf_train2= f1_score(y_train, predictions_rf_train2)
-precision_rf_train2 = precision_score(y_train, predictions_rf_train2)
-recall_rf_train2 = recall_score(y_train, predictions_rf_train2)
-#fpr_rf_train2, tpr_rf_train, thresholds_rf_train = roc_curve(y_train, y_pred_rf_train2)
-#auc_rf_train2 = auc(fpr_rf_train2, tpr_rf_train)
-print('RandomForestTrain2',accuracy_rf_train2,f1_rf_train2,precision_rf_train2,recall_rf_train2,file=fileResults)
-'''
-
-if isCreatePredictionForSimulator == True :
-  Z_pred_rf = rf2.predict(Z_test_svmlight)
-y_pred_rf_valid2 = rf2.predict(x_validation)
-predictions_rf_valid2 = y_pred_rf_valid2
-accuracy_rf_valid2= accuracy_score(y_validation, predictions_rf_valid2)
-f1_rf_valid2= f1_score(y_validation, predictions_rf_valid2)
-precision_rf_valid2 = precision_score(y_validation, predictions_rf_valid2)
-recall_rf_valid2 = recall_score(y_validation, predictions_rf_valid2)
-#fpr_rf_valid2, tpr_rf_valid2, thresholds_rf_valid2 = roc_curve(y_validation, y_pred_rf_valid2)
-#auc_rf_valid2 = auc(fpr_rf_valid2, tpr_rf_valid2)
-
-print('RandomForestValid2',accuracy_rf_valid2,f1_rf_valid2,precision_rf_valid2,recall_rf_valid2,file=fileResults)
-outstr = ""+str(accuracy_rf_valid2)+" "+str(f1_rf_valid2)+" "+str(precision_rf_valid2)+" "+str(recall_rf_valid2)
-y_pred_rf2 = []
-i = 1
-for x_test_i, y_test_i in zip(x_test, y_test):
-  predictions_rf2 = rf2.predict(x_test_i)
-  y_pred_rf2.append(predictions_rf2)
-  accuracy_rf2 = accuracy_score(y_test_i, predictions_rf2)
-  f1_rf2 = f1_score(y_test_i, predictions_rf2)
-  precision_rf2 = precision_score(y_test_i, predictions_rf2)
-  recall_rf2 = recall_score(y_test_i, predictions_rf2)
-  # fpr_rf2, tpr_rf2, thresholds_rf2 = roc_curve(y_test_i, predictions_rf2)
-  # auc_rf2 = auc(fpr_rf2, tpr_rf2)
-  # print(str(x_test_i.shape), str(y_test_i.shape), file=fileResults)
-  outstr = outstr + " " + str(accuracy_rf2) + " " + str(f1_rf2) + " " + str(precision_rf2) + " " + str(recall_rf2)
-  print('RandomForestTest2' + str(i),accuracy_rf2,f1_rf2,precision_rf2,recall_rf2 ,file=fileResults)
-  i += 1
-print(outstr, file=fileResults)
-
-'''
-model_lr = LogisticRegression(C=1e20,solver="liblinear")
-model_lr.fit(x_train, y_train.values.ravel())
-y_pred_lr = model_lr.predict(x_test)
-accuracy_lr = accuracy_score(y_test, y_pred_lr)
-precision_lr = precision_score(y_test, y_pred_lr)
-f1_lr = f1_score(y_test, y_pred_lr)
-fpr_lr, tpr_lr, thresholds_lr = roc_curve(y_test, y_pred_lr)
-auc_lr = auc(fpr_lr, tpr_lr)
-print('LogisticRegression',accuracy_lr,f1_lr,precision_lr,auc_lr,file=fileResults)
-'''
 tf.reset_default_graph()
 tf.set_random_seed(0)
 np.random.seed(0)
@@ -492,11 +313,16 @@ with sess.as_default():
                          validation_data=(x_validation, y_validation))
     model1.load_weights(checkpoint_file_path)
     model1.save(checkpoint_file_path)
-  print(str(Z_test_csv.shape), str(type(Z_test_csv)), str(x_validation.shape), str(type(x_validation)), file=fileResults)
-  Z_pred_keras = model1.predict(Z_test_csv).ravel()
+  #print(str(Z_test_csv.shape), str(type(Z_test_csv)), str(x_validation.shape), str(type(x_validation)), file=fileResults)
+  if isCreatePredictionForSimulator == True:
+    Z_pred_keras = model1.predict(Z_test_csv)
+    fileToPrintZ = open(predictionSamplesDFileBaseName + "relu" + "-" + prefix + 'prediction.out', "w",
+                        encoding="utf-8")
+    for prediction in Z_pred_keras:
+      fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
+    fileToPrintZ.close()
   y_pred_keras_validation = model1.predict(x_validation).ravel()
-  print(str(Z_pred_keras.shape), str(type(Z_pred_keras)), str(y_pred_keras_validation.shape), str(type(y_pred_keras_validation)),
-        file=fileResults)
+  #print(str(Z_pred_keras.shape), str(type(Z_pred_keras)), str(y_pred_keras_validation.shape), str(type(y_pred_keras_validation)), file=fileResults)
   y_pred_keras_test = []
   #fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_keras)
   #auc_keras = auc(fpr_keras, tpr_keras)
@@ -578,11 +404,13 @@ with sess.as_default():
     if prefix != "":
       checkpoint_file_path = prefix + "-" + checkpoint_file_path
     model2.save(checkpoint_file_path)
-  print(str(Z_test_csv.shape), str(type(Z_test_csv)), str(x_validation.shape), str(type(x_validation)), file=fileResults)
-  Z_pred_keras2 = model2.predict(Z_test_csv).ravel()
+  if isCreatePredictionForSimulator == True:
+    Z_pred_keras2 = model2.predict(Z_test_csv)
+    fileToPrintZ = open(predictionSamplesDFileBaseName + "selu" + "-" + prefix + 'prediction.out', "w", encoding="utf-8")
+    for prediction in Z_pred_keras2:
+      fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
+    fileToPrintZ.close()
   y_pred_keras2_validation = model2.predict(x_validation).ravel()
-  print(str(Z_pred_keras2.shape), str(type(Z_pred_keras2)), str(y_pred_keras2_validation.shape), str(type(y_pred_keras2_validation)),
-        file=fileResults)
   y_pred_keras2_test = []
   #fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_keras2)
   #auc_keras = auc(fpr_keras, tpr_keras)
@@ -601,70 +429,3 @@ with sess.as_default():
     i += 1
   print(out_str, file=fileResults)
 
-  pred_array_Z = np.row_stack([Z_pred_keras,Z_pred_keras2,Z_pred_rf])
-  pred_array_Z = pred_array_Z.mean(axis=0)
-  pred_array_Z = pred_array_Z.round()
-  fileToPrintZ = open(predictionSamplesDFileBaseName+prefix+'prediction.out', "w", encoding="utf-8")
-  for prediction in pred_array_Z :
-    fileToPrintZ.write(''+str(int(prediction))+'\n')
-  fileToPrintZ.close()
-
-  pred_array_valid = np.row_stack([y_pred_keras_validation, y_pred_keras2_validation, y_pred_rf_valid2])
-  pred_array_valid = pred_array_valid.mean(axis=0)
-  pred_array_valid = pred_array_valid.round()
-  accuracy_voting_valid = accuracy_score(y_validation, pred_array_valid)
-  f1_voting_valid = f1_score(y_validation, pred_array_valid)
-  precision_voting_valid = precision_score(y_validation, pred_array_valid)
-  recall_voting_valid = recall_score(y_validation, pred_array_valid)
-  #fpr_voting_valid, tpr_voting_valid, thresholds_voting_valid = roc_curve(y_validation, pred_array_valid)
-  #auc_voting_valid = auc(fpr_voting_valid, tpr_voting_valid)
-  outstr = "" + str(accuracy_voting_valid) + " " + str(f1_voting_valid) + " " + str(precision_voting_valid) + " " + str(recall_voting_valid)
-  print('VotingValid', accuracy_voting_valid, f1_voting_valid, precision_voting_valid, recall_voting_valid, file=fileResults)
-  i = 0
-  for x_test_i, y_test_i in zip(x_test, y_test):
-    #print(str(len(y_pred_keras_test[i])), str(len(y_pred_keras2_test[i])), str(len(y_pred_rf2[i])), file=fileResults)
-    pred_array = np.row_stack([y_pred_keras_test[i], y_pred_keras2_test[i], y_pred_rf2[i]])
-    pred_array = pred_array.mean(axis=0)
-    pred_array = pred_array.round()
-    accuracy_voting = accuracy_score(y_test_i, pred_array)
-    f1_voting = f1_score(y_test_i, pred_array)
-    precision_voting = precision_score(y_test_i, pred_array)
-    recall_voting = recall_score(y_test_i, pred_array)
-    #fpr_voting, tpr_voting, thresholds_voting = roc_curve(y_test_i, pred_array)
-    #auc_voting = auc(fpr_voting, tpr_voting)
-    outstr = outstr + " " + str(accuracy_voting) + " " + str(f1_voting) + " " + str(precision_voting) + " " + str(recall_voting)
-    i=i+1
-    print('VotingTest'+str(i), accuracy_voting, f1_voting, precision_voting, recall_voting, file=fileResults)
-  print(outstr, file=fileResults)
-
-  fileResults.close()
-
-  '''
-  plt.figure(1)
-  plt.plot([0, 1], [0, 1], 'k--')
-  plt.plot(fpr_keras, tpr_keras, label='Keras (area = {:.25f})'.format(auc_keras))
-  plt.plot(fpr_xgb, tpr_xgb, label='XGB (area = {:.25f})'.format(auc_xgb))
-  plt.plot(fpr_dt, tpr_dt, label='DT (area = {:.25f})'.format(auc_dt))
-  plt.plot(fpr_rf, tpr_rf, label='RF (area = {:.25f})'.format(auc_rf))
-  plt.plot(fpr_lr, tpr_lr, label='LR (area = {:.25f})'.format(auc_lr))
-  plt.xlabel('False positive rate')
-  plt.ylabel('True positive rate')
-  plt.title('ROC curve')
-  plt.legend(loc='best')
-  plt.savefig('roc1.png')
-  # Zoom in view of the upper left corner.
-  plt.figure(2)
-  plt.xlim(0, 0.2)
-  plt.ylim(0.8, 1)
-  plt.plot([0, 1], [0, 1], 'k--')
-  plt.plot(fpr_keras, tpr_keras, label='Keras (area = {:.25f})'.format(auc_keras))
-  plt.plot(fpr_xgb, tpr_xgb, label='XGB (area = {:.25f})'.format(auc_xgb))
-  plt.plot(fpr_dt, tpr_dt, label='DT (area = {:.25f})'.format(auc_dt))
-  plt.plot(fpr_rf, tpr_rf, label='RF (area = {:.25f})'.format(auc_rf))
-  plt.plot(fpr_lr, tpr_lr, label='LR (area = {:.25f})'.format(auc_lr))
-  plt.xlabel('False positive rate')
-  plt.ylabel('True positive rate')
-  plt.title('ROC curve (zoomed in at top left)')
-  plt.legend(loc='best')
-  plt.savefig('roc2.png')
-  '''
