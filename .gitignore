@@ -132,7 +132,6 @@ dmypy.json
 .idea/
 
 # My files
-dataset/*
 *.png
 *.out
 *.zip
