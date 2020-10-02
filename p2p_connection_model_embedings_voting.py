@@ -23,6 +23,8 @@ from joblib import dump, load
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import argparse
+
 import sys
 import matplotlib.pyplot as plt
 
@@ -80,43 +82,55 @@ def layer_str(embeding_output, *layers):
   return ret_layer_str
 
 
-baseFileName = "1010rr1101rr10"
-core = "2"
-prefix = ""
-isTestV4 = False
-isCreatePredictionForSimulator = False
-predictionSamplesDFileBaseName = "1010rr1101rr10network100000"
-isRandomForestInputFile = False
 randomForestInputFile = ""
-isTensorflow2InputFile = False
 tensorflow2InputFile = ""
-isTensorflow1InputFile = False
 tensorflow1InputFile = ""
-testSinceSet = 0
-if len(sys.argv) > 1:
-  baseFileName = str(sys.argv[1])
-if len(sys.argv) > 2:
-  core = str(int(sys.argv[2]) - 1)
-if len(sys.argv) > 3:
-  prefix = str(sys.argv[3])
-if len(sys.argv) > 4:
+
+
+parser=argparse.ArgumentParser()
+parser.add_argument('--core', default=1, help='the core that used for tensorflow')
+parser.add_argument('--basename', default="1010rr1101rr10", help='base name of dataset')
+parser.add_argument('--prefix', default="", help='prefix for output filename')
+parser.add_argument('--test_since_set', default=False, help='start the test from the specified test set with a number')
+parser.add_argument('--pred_file_name', default=False, help='make prediction for the given file suffix')
+parser.add_argument('--number_of_pred_file', default=0, help='number of prediction files')
+parser.add_argument('--random_forest', default=False, help='open random forest from file')
+parser.add_argument('--tensor_flow_input_file1', default=False, help='open deep network from file1')
+parser.add_argument('--tensor_flow_input_file2', default=False, help='open deep network from file2')
+
+args=parser.parse_args()
+
+core = int(args.core)
+baseFileName = str(args.basename)
+prefix = str(args.prefix)
+if str(args.test_since_set) != "False" and str(args.pred_file_name) != "false":
   isTestV4 = True
-  testSinceSet = int(sys.argv[4]) - 1
-if len(sys.argv) > 5:
-  if str(sys.argv[5]) == "0" or str(sys.argv[5]) == "False" or str(sys.argv[5]) == "false":
-    isCreatePredictionForSimulator = False
-  else:
-    isCreatePredictionForSimulator = True
-    predictionSamplesDFileBaseName = str(sys.argv[5])
-if len(sys.argv) > 6 and str(sys.argv[6]) != "False" and str(sys.argv[6]) != "false" :
+  testSinceSet = int(args.test_since_set) - 1
+else :
+  isTestV4 = False
+  testSinceSet = 0
+if str(args.pred_file_name) != "False" and str(args.pred_file_name) != "false":
+  isCreatePredictionForSimulator = True
+  predictionSamplesDFileBaseName = str(args.pred_file_name)
+  predictionSamplesDFileBaseName_suffix =  predictionSamplesDFileBaseName.split('x')[1]
+else:
+  isCreatePredictionForSimulator = False
+NUMBER_OF_PRED_FILE = int(args.number_of_pred_file)
+if str(args.random_forest) != "False" and str(args.random_forest) != "false" :
   isRandomForestInputFile = True
-  randomForestInputFile = str(sys.argv[6])
-if len(sys.argv) > 7 and str(sys.argv[7]) != "False" and str(sys.argv[7]) != "false" :
+  randomForestInputFile = str(args.random_forest)
+else:
+  isTensorflow1InputFile = False
+if str(args.tensor_flow_input_file1) != "False" and str(args.tensor_flow_input_file1) != "false" :
   isTensorflow1InputFile = True
-  tensorflow1InputFile = str(sys.argv[7])
-if len(sys.argv) > 8 and str(sys.argv[8]) != "False" and str(sys.argv[7]) != "false" :
+  tensorflow1InputFile = str(args.tensor_flow_input_file1)
+else:
+  isRandomForestInputFile = False
+if str(args.tensor_flow_input_file2) != "False" and str(args.tensor_flow_input_file2) != "false":
   isTensorflow2InputFile = True
-  tensorflow2InputFile = str(sys.argv[8])
+  tensorflow2InputFile = str(args.tensor_flow_input_file2)
+else:
+  isTensorflow2InputFile = False
 
 os.environ["CUDA_VISIBLE_DEVICES"] = core
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
