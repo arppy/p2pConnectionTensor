@@ -6,28 +6,45 @@ from sklearn.datasets import load_svmlight_file
 from joblib import dump, load
 import sys
 import gc
+import argparse
+import multiprocessing
+import time
 
-baseFileName = "111111111111"
-prefix = ""
-isTestV4 = False
-testSinceSet = 0
-isCreatePredictionForSimulator = False
-predictionSamplesDFileBaseName = "1010rr1101rr10network100000"
-isRandomForestInputFile = False
-randomForestInputFile = ""
-if len(sys.argv) > 1 :
-  baseFileName = str(sys.argv[1])
-if len(sys.argv) > 2 :
-  prefix = str(sys.argv[2])
-if len(sys.argv) > 3:
+#nohup python3 randomforest_p2p.py --core 50 --basename 1010rr1101rr10 --prefix 10c --test_since_set 10 --pred_file_name 1010rr1101rr10network100000xallHour2 --random_forest 10c-rf85-1010rr1101rr10.joblib  &> 10c-rf85-1010rr1101rr10.out &
+
+parser=argparse.ArgumentParser()
+parser.add_argument('--core', default=1, help='Number of core that used for parallel processes')
+parser.add_argument('--basename', default="1010rr1101rr10", help='base name of dataset')
+parser.add_argument('--prefix', default="", help='prefix for output filename')
+parser.add_argument('--test_since_set', default=False, help='start the test from the specified test set with a number')
+parser.add_argument('--pred_file_name', default=False, help='make prediction for the given file')
+parser.add_argument('--random_forest', default=False, help='open random forest from file')
+parser.add_argument('--number_of_pred_file', default=0, help='open random forest from file')
+
+
+args=parser.parse_args()
+
+NUMBER_OF_CORES = int(args.core)
+baseFileName = str(args.basename)
+prefix = str(args.prefix)
+if str(args.test_since_set) != "False" and str(args.pred_file_name) != "false":
   isTestV4 = True
-  testSinceSet = int(sys.argv[3]) - 1
-if len(sys.argv) > 4:
+  testSinceSet = int(args.test_since_set) - 1
+else :
+  isTestV4 = False
+  testSinceSet = 0
+if str(args.pred_file_name) != "False" and str(args.pred_file_name) != "false":
   isCreatePredictionForSimulator = True
-  predictionSamplesDFileBaseName = str(sys.argv[4])
-if len(sys.argv) > 5:
+  predictionSamplesDFileBaseName = str(args.pred_file_name)
+  predictionSamplesDFileBaseName_suffix =  predictionSamplesDFileBaseName.split('x')[1]
+else:
+  isCreatePredictionForSimulator = False
+if str(args.random_forest) != "False" and str(args.random_forest) != "false" :
   isRandomForestInputFile = True
-  randomForestInputFile = str(sys.argv[5])
+  randomForestInputFile = str(args.random_forest)
+else:
+  isRandomForestInputFile = False
+NUMBER_OF_PRED_FILE = int(args.number_of_pred_file)
 
 fileResults = open("rf"+prefix+""+baseFileName + ".results", "w")
 
@@ -35,9 +52,11 @@ np.random.seed(0)
 X, y = load_svmlight_file("dataset/" + baseFileName + ".svmlight")
 X_df = pd.DataFrame(X.todense())
 y_df = pd.DataFrame(y)
-
-NUMBER_OF_TRAINING_SET_SIZE = 178641  # v3
-NUMBER_OF_TEST_SET_SIZES = [8953, 9204, 8473, 8094, 10854, 47871]  # v3
+print(str(X_df.shape), str(y_df.shape), file=fileResults)
+# NUMBER_OF_TRAINING_SET_SIZE = 178778 # v1
+# NUMBER_OF_TRAINING_SET_SIZE = 178684 # v2
+NUMBER_OF_TRAINING_SET_SIZE = 187954  # v3
+NUMBER_OF_TEST_SET_SIZES = [9352, 9792, 9224, 9230, 9233, 9283, 9915, 9916, 8587, 8883]  # v4
 if isTestV4 == True:
     if testSinceSet > len(NUMBER_OF_TEST_SET_SIZES) - 1:
         testSinceSet = len(NUMBER_OF_TEST_SET_SIZES) - 1
@@ -54,9 +73,15 @@ y_df_train = y_df.head(NUMBER_OF_TRAINING_SET_SIZE)
 msk = np.random.rand(len(X_df_train)) < 0.95  # 0.8
 y_train = y_df_train[msk]
 x_train = X_df_train[msk]
-y_validation = y_df_train[~msk]
-x_validation = X_df_train[~msk]
-print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_validation.shape), file=fileResults)
+y_validation_test = y_df_train[~msk]
+x_validation_test = X_df_train[~msk]
+next_msk = np.random.rand(len(x_validation_test)) < 0.6
+y_vtest = y_validation_test[next_msk]
+x_vtest = x_validation_test[next_msk]
+y_validation = y_validation_test[~next_msk]
+x_validation = x_validation_test[~next_msk]
+
+print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_vtest.shape), str(x_validation.shape), file=fileResults)
 NUMBER_OF_TEST_SET_SIZE = X_df.shape[0] - NUMBER_OF_TRAINING_SET_SIZE
 x_df_test = X_df.tail(NUMBER_OF_TEST_SET_SIZE)
 y_df_test = y_df.tail(NUMBER_OF_TEST_SET_SIZE)
@@ -110,34 +135,72 @@ recall_rf_train2 = recall_score(y_train, predictions_rf_train2)
 #auc_rf_train2 = auc(fpr_rf_train2, tpr_rf_train)
 print('RandomForestTrain2',accuracy_rf_train2,f1_rf_train2,precision_rf_train2,recall_rf_train2,file=fileResults)
 '''
-print("gc.collect()_start")
+#print("gc.collect()_start")
 gc.collect()
-print("gc.collect()_end")
+#print("gc.collect()_end")
 
-if isCreatePredictionForSimulator == True :
-  fileSuffixList = ["p11","p12","p21","p22"]
-  fileToPrintZ = open(predictionSamplesDFileBaseName + "rf" + str(max_depth) + "-" + prefix + 'prediction.out', "w",
+
+def predict_samples(fileSuffixList, core) :
+  print(core,len(fileSuffixList),str(fileSuffixList))
+  fileToPrintZ = open(predictionSamplesDFileBaseName + "rf" + str(max_depth) + "-" + prefix +"-"+ str(core) + 'prediction.out', "w",
                       encoding="utf-8")
-  for suffix in fileSuffixList :
-    print("load_svmlight_file_start"+suffix)
-    Z_File_1, z_y_1 = load_svmlight_file("" + predictionSamplesDFileBaseName + "_"+suffix+".svmlight")
-    print("load_svmlight_file_end"+suffix,type(Z_File_1))
+  for suffix in fileSuffixList:
+    #print("load_svmlight_file_start" + suffix)
+    Z_File_1, z_y_1 = load_svmlight_file(
+      "../createP2PConnectionChurnModel/partOfSvmLight_"+predictionSamplesDFileBaseName_suffix+"/" + predictionSamplesDFileBaseName + "_" + suffix + ".svmlight")
+    #print("load_svmlight_file_end" + suffix, type(Z_File_1))
     gc.collect()
-    print("svmlight_file_todense_start"+suffix)
+    #print("svmlight_file_todense_start" + suffix)
     Z1_test_svmlight = pd.DataFrame(Z_File_1.todense())
-    print("svmlight_file_todense_end"+suffix)
+    #print("svmlight_file_todense_end" + suffix + " " + str(Z1_test_svmlight.shape[1])+" "+str(X_df_train.shape[1]))
+    #print(core,suffix,"add_new_empty_columns_to_Z1_test_svmlight_start")
+    for i in range(Z1_test_svmlight.shape[1], X_df_train.shape[1]):
+      Z1_test_svmlight['newCol' + str(i)] = Z1_test_svmlight.apply(lambda x: 0, axis=1)
+    #print(core,suffix,"add_new_empty_columns_to_Z1_test_svmlight_end",str(Z1_test_svmlight.shape))
     del Z_File_1
     del z_y_1
     gc.collect()
-    print("predict_start"+suffix)
+    #print(core,suffix,"predict_start")
     Z1_pred_rf = rf2.predict(Z1_test_svmlight)
-    print("predict_end"+suffix)
-    for prediction in Z1_pred_rf :
-      fileToPrintZ.write(''+str(int(prediction))+'\n')
+    print(core,suffix,"predict_end",str(Z1_test_svmlight.shape),str(Z1_pred_rf.shape))
+    for prediction in Z1_pred_rf:
+      fileToPrintZ.write('' + str(int(round(prediction))) + '\n')
     del Z1_test_svmlight
     del Z1_pred_rf
     gc.collect()
   fileToPrintZ.close()
+
+
+if isCreatePredictionForSimulator == True:
+  #MAIN
+  fileList = {}
+  for core in range(NUMBER_OF_CORES) :
+    fileList[core] = []
+
+  THREAD_FILE_NUMBER_BLOCK_SIZE = int(NUMBER_OF_PRED_FILE/NUMBER_OF_CORES)
+  fi=0
+  core = 0
+  #print(str(0),sumOfSize,str(THREAD_FILE_SIZE_BLOCK_SIZE),str(NUMBER_OF_CORES*THREAD_FILE_SIZE_BLOCK_SIZE))
+  for i in range(0,NUMBER_OF_PRED_FILE) :
+    #searchObj = re.search(r'^[0-9]{6}_2014[0-9]{4}-[0-9]{4}\.csv$', fileName)
+    fileList[core].append("p"+str(i))
+    fi+=1
+    if fi / THREAD_FILE_NUMBER_BLOCK_SIZE >= 1 and core != NUMBER_OF_CORES-1:
+      core += 1
+      #print(fi, sumOfSize, str(THREAD_FILE_SIZE_BLOCK_SIZE), str(NUMBER_OF_CORES-core))
+      fi = 0
+  #print(fi, sumOfSize, str(THREAD_FILE_SIZE_BLOCK_SIZE), str(NUMBER_OF_CORES-core))
+  processes = []
+  for core in range(NUMBER_OF_CORES) :
+    processes.append(multiprocessing.Process(target=predict_samples, args=(fileList[core],core)))
+    processes[-1].start()  # start the thread we just created
+    time.sleep(30)
+  for t in processes:
+    t.join()
+
+
+
+
 
 '''  
 y_pred_rf_valid2 = rf2.predict(x_validation)

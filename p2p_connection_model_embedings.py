@@ -190,13 +190,11 @@ with sess.as_default():
     X_df = pd.read_csv("dataset/" + baseFileName + ".csv", header=None, skiprows=1)
     y_df = X_df[0]
     X_df = X_df.drop([0], axis=1)
-
     # NUMBER_OF_TRAINING_SET_SIZE = 178778 # v1
     # NUMBER_OF_TRAINING_SET_SIZE = 178684 # v2
-    NUMBER_OF_TRAINING_SET_SIZE = 178641  # v3
-    # NUMBER_OF_TEST_SET_SIZES = [37092] # v1
-    # NUMBER_OF_TEST_SET_SIZES = [18114, 19072] # v2
-    NUMBER_OF_TEST_SET_SIZES = [8953, 9204, 8473, 8094, 10854]  # v3
+    # NUMBER_OF_TRAINING_SET_SIZE = 178641  # v3
+    NUMBER_OF_TRAINING_SET_SIZE = 187954  # v3
+    NUMBER_OF_TEST_SET_SIZES = [9352, 9792, 9224, 9230, 9233, 9283, 9915, 9916, 8587, 8883]  # v4
     if isTestV4 == True:
         if testSinceSet > len(NUMBER_OF_TEST_SET_SIZES) - 1:
             testSinceSet = len(NUMBER_OF_TEST_SET_SIZES) - 1
@@ -213,13 +211,20 @@ with sess.as_default():
     msk = np.random.rand(len(X_df_train)) < 0.95  # 0.8
     y_train = y_df_train[msk]
     x_train = X_df_train[msk]
-    y_validation = y_df_train[~msk]
-    x_validation = X_df_train[~msk]
-    print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_validation.shape), file=fileResults)
+    y_validation_test = y_df_train[~msk]
+    x_validation_test = X_df_train[~msk]
+    next_msk = np.random.rand(len(x_validation_test)) < 0.6
+    y_vtest = y_validation_test[next_msk]
+    x_vtest = x_validation_test[next_msk]
+    y_validation = y_validation_test[~next_msk]
+    x_validation = x_validation_test[~next_msk]
+    print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_vtest.shape), str(x_validation.shape),
+          file=fileResults)
     NUMBER_OF_TEST_SET_SIZE = X_df.shape[0] - NUMBER_OF_TRAINING_SET_SIZE
     x_df_test = X_df.tail(NUMBER_OF_TEST_SET_SIZE)
     y_df_test = y_df.tail(NUMBER_OF_TEST_SET_SIZE)
-
+    # NUMBER_OF_TEST_SET_SIZES = [37092] # v1
+    # NUMBER_OF_TEST_SET_SIZES = [18114, 19072] # v2
 
     x_test = []
     y_test = []
@@ -233,6 +238,13 @@ with sess.as_default():
         x_test.append(x_df_test.head(sum_of_test_sets_sizes).tail(number_of_test_set_size))
         y_test.append(y_df_test.head(sum_of_test_sets_sizes).tail(number_of_test_set_size))
         # print(str(x_test[i].shape),str(y_test[i].shape))
+
+    print(y_train.mean())
+
+    column_maxes = X_df.max()
+    vocab_size = max(column_maxes[len(column_maxes) - 1], column_maxes[len(column_maxes) - 2])
+    input_length = x_train.shape[1]
+
     '''
     NUMBER_OF_TRAINING_SET_SIZE = X_df.shape[0]
     X_df_train = X_df.head(NUMBER_OF_TRAINING_SET_SIZE)
@@ -250,77 +262,8 @@ with sess.as_default():
     y_validation = y_df_train[~msk2]
     x_validation = X_df_train[~msk2]
     '''
-    parameter_triple = {
-        "000000010000": (6, 3),
-        "000000010100": (8, 3),
-        "001000000000": (11, 3),
-        "100000000000": (24, 3),
-        "0000rr00000010": (97, 10),
-        "0000000000r010": (100, 10),
-        "0000rr01000010": (103, 10),
-        "0000000100r010": (106, 10),
-        "0000000101r010": (108, 10),
-        "000011010100": (112, 10),
-        "0000001101r010": (113, 10),
-        "000000010110": (117, 10),
-        "001000010110": (128, 10),
-        "1010rr01000010": (138, 10),
-        "1010000100r010": (141, 10),
-        "100000010110": (141, 10),
-        "101000010010": (150, 10),
-        "1010000100r02": (151, 10),
-        "101000010110": (151, 10),
-        "111111111100": (165, 10),  # no_org no_country
-        "0000rr0000r010": (197, 10),
-        "0000rr0101r010": (207, 10),
-        "0000rr1101r010": (209, 10),
-        "0010rr0101r010": (218, 10),
-        "0010rr1101r010": (220, 10),
-        "000011010110": (220, 10),
-        "000011110110": (222, 10),
-        "1000rr0101r010": (231, 10),
-        "001011010110": (231, 10),
-        "1000rr1101r010": (233, 10),
-        "1010rr0100r010": (238, 10),
-        "101011010010": (238, 10),
-        "1010rr0101r010": (242, 10),
-        "100011010110": (244, 10),
-        "1010rr1101r010": (247, 10),
-        "1010rr0100r02": (254, 10),
-        "1010rr0101rr100": (517, 10),
-        "1010110101rr100": (564, 10),
-        "00000000000r10": (602, 10),
-        "00000001000r10": (608, 10),
-        "0000001101rr10": (729, 10),
-        "0000rr0101rr10": (809, 10),
-        "0000rr1101rr10": (811, 10),
-        "1010rr0000rr10": (834, 100),
-        "1010rr0101rr10": (842, 100),
-        "1010rr1101rr10": (846, 100),
-        "1010110101rr10": (855, 100),
-        "101011010101": (985, 100),
-        "101000110111": (994, 100),
-        "1010110101rr2": (1011, 100),
-        "1010rr0100rr2": (1014, 100),
-        "000011010111": (1048, 100),
-        "000011110111": (1050, 100),
-        "101011000011": (1075, 100),
-        "101011010011": (1081, 100),  # no_day no_is_online no_roaming no_stun_server_string no_webrtctest
-        "001011111111": (1081, 100),  # no_time no_day no_is_online
-        "101011110011": (1081, 100),  # no_day no_is_online no_stun_server_string no_webrtctest
-        "101011010111": (1081, 100),  # no_day no_is_online no_stun_server_string no_roaming
-        "100011110111": (1086, 100),  # no_day no_android_version no_is_online no_stun_server_string
-        "101011110111": (1097, 100),  # no_day no_is_online no_stun_server_string
-        "111111110111": (1106, 100),  # no_stun_server_string
-        "101111111111": (1107, 100),  # no_day
-        "111011111111": (1112, 100),  # no_is_online or
-        "111111111011": (1112, 100),  # no_wbrtctest
-        "111111111111": (1141, 100)
-    }
-    vocab_size = parameter_triple.get(baseFileName)[0]
-    input_length = x_train.shape[1]
-    output_dim = 40 #parameter_triple.get(baseFileName)[1]
     '''
+    output_dim = 100 
     hidden_activation = 'relu'
     dropout_0 = 0.0
     layer_1 = 1000
@@ -330,6 +273,7 @@ with sess.as_default():
     layer_3 = 1000
     dropout_3 = 0.0
     '''
+    output_dim = 40
     hidden_activation = 'tanh'
     dropout_0 = 0.5
     layer_1 = 350

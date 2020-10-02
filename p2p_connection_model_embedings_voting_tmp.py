@@ -24,6 +24,8 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 import sys
+import gc
+
 import matplotlib.pyplot as plt
 
 import time
@@ -93,6 +95,7 @@ tensorflow1InputFile = ""
 isTensorflow2InputFile = False
 tensorflow2InputFile = ""
 testSinceSet = 0
+NUMBER_OF_PRED_FILE = 1227
 if len(sys.argv) > 1:
   baseFileName = str(sys.argv[1])
 if len(sys.argv) > 2:
@@ -103,14 +106,20 @@ if len(sys.argv) > 4:
   isTestV4 = True
   testSinceSet = int(sys.argv[4]) - 1
 if len(sys.argv) > 5:
-  isCreatePredictionForSimulator = True
-  predictionSamplesDFileBaseName = str(sys.argv[5])
+  if str(sys.argv[5]) == "0" or str(sys.argv[5]) == "False" or str(sys.argv[5]) == "false" :
+    isCreatePredictionForSimulator = False
+  else :
+    isCreatePredictionForSimulator = True
+    predictionSamplesDFileBaseName = str(sys.argv[5])
 if len(sys.argv) > 6:
   isTensorflow1InputFile = True
   tensorflow1InputFile = str(sys.argv[6])
 if len(sys.argv) > 7:
   isTensorflow2InputFile = True
   tensorflow2InputFile = str(sys.argv[7])
+if len(sys.argv) > 8:
+  NUMBER_OF_PRED_FILE = int(sys.argv[8])
+
 
 os.environ["CUDA_VISIBLE_DEVICES"] = core
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -131,15 +140,14 @@ with sess.as_default():
   tf.set_random_seed(0)
   np.random.seed(0)
 
-  Z_test_csv = pd.read_csv("" + predictionSamplesDFileBaseName + ".csv", header=None)
-
   X_df = pd.read_csv("dataset/" + baseFileName + ".csv", header=None, skiprows=1)
   y_df = X_df[0]
   X_df = X_df.drop([0], axis=1)
   # NUMBER_OF_TRAINING_SET_SIZE = 178778 # v1
   # NUMBER_OF_TRAINING_SET_SIZE = 178684 # v2
-  NUMBER_OF_TRAINING_SET_SIZE = 178641  # v3
-  NUMBER_OF_TEST_SET_SIZES = [8953, 9204, 8473, 8094, 10854]  # v3
+  # NUMBER_OF_TRAINING_SET_SIZE = 178641  # v3
+  NUMBER_OF_TRAINING_SET_SIZE = 187954  # v3
+  NUMBER_OF_TEST_SET_SIZES = [9352, 9792, 9224, 9230, 9233, 9283, 9915, 9916, 8587, 8883]  # v4
   if isTestV4 == True:
     if testSinceSet > len(NUMBER_OF_TEST_SET_SIZES) - 1:
       testSinceSet = len(NUMBER_OF_TEST_SET_SIZES) - 1
@@ -156,9 +164,15 @@ with sess.as_default():
   msk = np.random.rand(len(X_df_train)) < 0.95  # 0.8
   y_train = y_df_train[msk]
   x_train = X_df_train[msk]
-  y_validation = y_df_train[~msk]
-  x_validation = X_df_train[~msk]
-  print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_validation.shape), file=fileResults)
+  y_validation_test = y_df_train[~msk]
+  x_validation_test = X_df_train[~msk]
+  next_msk = np.random.rand(len(x_validation_test)) < 0.6
+  y_vtest = y_validation_test[next_msk]
+  x_vtest = x_validation_test[next_msk]
+  y_validation = y_validation_test[~next_msk]
+  x_validation = x_validation_test[~next_msk]
+  print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_vtest.shape), str(x_validation.shape),
+        file=fileResults)
   NUMBER_OF_TEST_SET_SIZE = X_df.shape[0] - NUMBER_OF_TRAINING_SET_SIZE
   x_df_test = X_df.tail(NUMBER_OF_TEST_SET_SIZE)
   y_df_test = y_df.tail(NUMBER_OF_TEST_SET_SIZE)
@@ -177,177 +191,14 @@ with sess.as_default():
     x_test.append(x_df_test.head(sum_of_test_sets_sizes).tail(number_of_test_set_size))
     y_test.append(y_df_test.head(sum_of_test_sets_sizes).tail(number_of_test_set_size))
     # print(str(x_test[i].shape),str(y_test[i].shape))
-  parameter_tuple = {
-    "000000010000": (6, 3),
-    "000000010100": (8, 3),
-    "001000000000": (11, 3),
-    "100000000000": (24, 3),
-    "0000rr00000010": (97, 10),
-    "0000000000r010": (100, 10),
-    "0000rr01000010": (103, 10),
-    "0000000100r010": (106, 10),
-    "0000000101r010": (108, 10),
-    "000011010100": (112, 10),
-    "0000001101r010": (113, 10),
-    "000000010110": (117, 10),
-    "001000010110": (128, 10),
-    "1010rr01000010": (138, 10),
-    "1010000100r010": (141, 10),
-    "100000010110": (141, 10),
-    "101000010010": (150, 10),
-    "1010000100r02": (151, 10),
-    "101000010110": (151, 10),
-    "111111111100": (165, 10),  # no_org no_country
-    "0000rr0000r010": (197, 10),
-    "0000rr0101r010": (207, 10),
-    "0000rr1101r010": (209, 10),
-    "0010rr0101r010": (218, 10),
-    "0010rr1101r010": (220, 10),
-    "000011010110": (220, 10),
-    "000011110110": (222, 10),
-    "1000rr0101r010": (231, 10),
-    "001011010110": (231, 10),
-    "1000rr1101r010": (233, 10),
-    "1010rr0100r010": (238, 10),
-    "101011010010": (238, 10),
-    "1010rr0101r010": (242, 10),
-    "100011010110": (244, 10),
-    "1010rr1101r010": (247, 10),
-    "1010rr0100r02": (254, 10),
-    "1010rr0101rr100": (517, 10),
-    "1010110101rr100": (564, 10),
-    "00000000000r10": (602, 10),
-    "00000001000r10": (608, 10),
-    "0000001101rr10": (729, 10),
-    "0000rr0101rr10": (809, 10),
-    "0000rr1101rr10": (811, 10),
-    "1010rr0000rr10": (834, 100),
-    "1010rr0101rr10": (842, 100),
-    "1010rr1101rr10": (846, 100),
-    "1010110101rr10": (855, 100),
-    "101011010101": (985, 100),
-    "101000110111": (994, 100),
-    "1010110101rr2": (1011, 100),
-    "1010rr0100rr2": (1014, 100),
-    "000011010111": (1048, 100),
-    "000011110111": (1050, 100),
-    "101011000011": (1075, 100),
-    "101011010011": (1081, 100),  # no_day no_is_online no_roaming no_stun_server_string no_webrtctest
-    "001011111111": (1081, 100),  # no_time no_day no_is_online
-    "101011110011": (1081, 100),  # no_day no_is_online no_stun_server_string no_webrtctest
-    "101011010111": (1081, 100),  # no_day no_is_online no_stun_server_string no_roaming
-    "100011110111": (1086, 100),  # no_day no_android_version no_is_online no_stun_server_string
-    "101011110111": (1097, 100),  # no_day no_is_online no_stun_server_string
-    "111111110111": (1106, 100),  # no_stun_server_string
-    "101111111111": (1107, 100),  # no_day
-    "111011111111": (1112, 100),  # no_is_online or
-    "111111111011": (1112, 100),  # no_wbrtctest
-    "111111111111": (1141, 100)
-  }
-  vocab_size = parameter_tuple.get(baseFileName)[0]
-  input_length = x_train.shape[1]
-  output_dim = parameter_tuple.get(baseFileName)[1]
 
-  if isTensorflow1InputFile == True and tensorflow1InputFile != "":
-    model1 = load_model(tensorflow1InputFile, custom_objects={ 'f1': f1, 'recall': recall, 'precision': precision, })
-    '''    'hidden_activation' : 'relu',
-                          'output_activation' : 'sigmoid',
-                          'dropout_0' : 0.5,
-                          'dropout_1': 0.5,
-                          'dropout_2': 0.5,
-                          'dropout_3': 0.5,
-                          'layer_1': 1000,
-                          'layer_2': 1000,
-                          'layer_3': 1000,
-                          'opt_type' : "Adam",
-                          'lr' : 0.001,
-                          'beta_1' : 0.9,
-                          'beta_2' : 0.999,
-                          'epsilon' : 1e-03,
-                          'amsgrad' : True'''
-  else :
-    hidden_activation = 'relu'
-    dropout_0 = 0.5
-    layer_1 = 1000
-    dropout_1 = 0.5
-    layer_2 = 1000
-    dropout_2 = 0.5
-    layer_3 = 1000
-    dropout_3 = 0.5
-    output_activation = 'sigmoid'
-    model1 = Sequential()
-    model1.add(Embedding(input_dim=vocab_size, output_dim=output_dim, input_length=input_length))
-    model1.add(Flatten())
-    # model.add(Dropout(dropout_0))
-    model1.add(Dense(layer_1, activation=hidden_activation))
-    # model.add(Dropout(dropout_1))
-    model1.add(Dense(layer_2, activation=hidden_activation))
-    # model.add(Dropout(dropout_2))
-    model1.add(Dense(layer_3, activation=hidden_activation))
-    # model.add(Dropout(dropout_3))
-    model1.add(Dense(1, activation=output_activation))
-    opt_type = "Adam"
-    lr = 0.001
-    beta_1 = 0.9
-    beta_2 = 0.999
-    epsilon = 1e-03
-    amsgrad = True
-    opt = Adam(lr=lr, beta_1=beta_1, beta_2=beta_2, epsilon=epsilon, amsgrad=amsgrad)
-    model1.compile(loss='binary_crossentropy',
-                  optimizer=opt,
-                  metrics=['accuracy', f1, precision, recall])
-    print(str(vocab_size),str(output_dim),str(input_length))
-    batch_size = 128
-    epochs = 50
-    # simple early stopping
-    es = EarlyStopping(monitor="val_loss", mode='min', verbose=1, patience=2)  # val_loss , patience=1
-    checkpoint_file_path = "relu-" + baseFileName + "-best_model.hdf5"
-    if prefix != "":
-      checkpoint_file_path = prefix + "-" + checkpoint_file_path
-    mc = ModelCheckpoint(checkpoint_file_path, monitor="val_loss", mode='min', save_best_only=True, verbose=1)
-    history = model1.fit(x_train, y_train,
-                         batch_size=batch_size,
-                         callbacks=[es, mc],
-                         epochs=epochs,
-                         verbose=1,
-                         validation_data=(x_validation, y_validation))
-    model1.load_weights(checkpoint_file_path)
-    model1.save(checkpoint_file_path)
-  #print(str(Z_test_csv.shape), str(type(Z_test_csv)), str(x_validation.shape), str(type(x_validation)), file=fileResults)
-  if isCreatePredictionForSimulator == True:
-    Z_pred_keras = model1.predict(Z_test_csv)
-    fileToPrintZ = open(predictionSamplesDFileBaseName + "relu" + "-" + prefix + 'prediction.out', "w",
-                        encoding="utf-8")
-    for prediction in Z_pred_keras:
-      fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
-    fileToPrintZ.close()
-  y_pred_keras_validation = model1.predict(x_validation).ravel()
-  #print(str(Z_pred_keras.shape), str(type(Z_pred_keras)), str(y_pred_keras_validation.shape), str(type(y_pred_keras_validation)), file=fileResults)
-  y_pred_keras_test = []
-  #fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_keras)
-  #auc_keras = auc(fpr_keras, tpr_keras)
-  '''print("Tensorflow1", layer_str(output_dim, layer_1, layer_2, layer_3),
-        dropout_str(dropout_0, dropout_1, dropout_2, dropout_3),
-        opt_type + "(lr=" + str(lr) + ",beta_1=" + str(beta_1) + ",beta_2=" + str(beta_2) + ",epsilon=" + str(
-          epsilon) + ",amsgrad=" + str(amsgrad) + ")",
-        hidden_activation, output_activation, file=fileResults)'''
-  score = model1.evaluate(x_validation, y_validation, verbose=0)
-  out_str = "" + str(score[1]) + " " + str(score[2]) + " " + str(score[3]) + " " + str(score[4])
-  #out_str = "" + str(epochs) + " " + out_str
-  #out_str = "" + str(es.stopped_epoch) + " " + out_str
-  print('KerasValid1',score[1],score[2],score[3],score[4],file=fileResults)
-  i = 1
-  for x_test_i, y_test_i in zip(x_test, y_test):
-    y_pred_keras_test.append(model1.predict(x_test_i).ravel())
-    score = model1.evaluate(x_test_i, y_test_i, verbose=0)
-    # print(len(score), str(x_test_1.shape), str(y_test_1.shape), file=fileResults)
-    out_str = out_str + " " + str(score[1]) + " " + str(score[2]) + " " + str(score[3]) + " " + str(score[4])
-    print('KerasTest1' + str(i), score[1], score[2], score[3], score[4], file=fileResults)
-    i += 1
-  print(out_str, file=fileResults)
-  if isTensorflow2InputFile == True and tensorflow2InputFile != "":
-    model2 = load_model(tensorflow2InputFile, custom_objects={ 'f1' : f1, 'recall' : recall, 'precision' : precision,})
-    ''' 'hidden_activation' : 'selu',
+  print(y_train.mean())
+
+  column_maxes = X_df.max()
+  vocab_size = max(column_maxes[len(column_maxes) - 1], column_maxes[len(column_maxes) - 2])
+  input_length = x_train.shape[1]
+
+  ''' 'hidden_activation' : 'selu',
                              'output_activation' : 'sigmoid',
                              'dropout_0' : 0.0,
                              'dropout_1': 0.0,
@@ -361,7 +212,9 @@ with sess.as_default():
                              'beta_1' : 0.9,
                              'beta_2' : 0.999,
                              'epsilon' : 1e-03,
-                             'amsgrad' : True '''
+                             'amsgrad' : True 
+  if isTensorflowSeluInputFile == True and tensorflowSeluInputFile != "":
+    model2 = load_model(tensorflowSeluInputFile, custom_objects={ 'f1' : f1, 'recall' : recall, 'precision' : precision,})
   else :
     hidden_activation = 'selu'
     dropout_0 = 0.0
@@ -406,15 +259,17 @@ with sess.as_default():
     model2.save(checkpoint_file_path)
   if isCreatePredictionForSimulator == True:
     Z_pred_keras2 = model2.predict(Z_test_csv)
-    fileToPrintZ = open(predictionSamplesDFileBaseName + "selu" + "-" + prefix + 'prediction.out', "w", encoding="utf-8")
+    fileToPrintZ = open(predictionSamplesDFileBaseName + "selu" + "-" + prefix + 'prediction.out', "w",
+                        encoding="utf-8")
     for prediction in Z_pred_keras2:
       fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
     fileToPrintZ.close()
-  y_pred_keras2_validation = model2.predict(x_validation).ravel()
+  y_pred_keras2_validation = model2.predict(x_vtest).ravel()
+
   y_pred_keras2_test = []
   #fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_keras2)
   #auc_keras = auc(fpr_keras, tpr_keras)
-  score = model2.evaluate(x_validation, y_validation, verbose=0)
+  score = model2.evaluate(x_vtest, y_vtest, verbose=0)
   out_str = "" + str(score[1]) + " " + str(score[2]) + " " + str(score[3]) + " " + str(score[4])
   # out_str = "" + str(epochs) + " " + out_str
   #out_str = "" + str(es.stopped_epoch) + " " + out_str
@@ -428,4 +283,293 @@ with sess.as_default():
     print('KerasTest2' + str(i), score[1], score[2], score[3], score[4], file=fileResults)
     i += 1
   print(out_str, file=fileResults)
+  '''
+  '''                   'hidden_activation' : 'tanh',
+                          'output_activation' : 'sigmoid',
+                          'dropout_0' : 0.5,
+                          'dropout_1': 0.5,
+                          'dropout_2': 0.0,
+                          'dropout_3': 0.0,
+                          'layer_1': 350,
+                          'layer_2': 100,
+                          'layer_3': 100,
+                          'opt_type' : "Adam",
+                          'lr' : 0.001,
+                          'beta_1' : 0.9,
+                          'beta_2' : 0.999,
+                          'epsilon' : 1e-03,
+                          'amsgrad' : True'''
+  '''
+  if isTensorflow1InputFile == True and tensorflow1InputFile != "":
+    model1 = load_model(tensorflow1InputFile, custom_objects={'f1': f1, 'recall': recall, 'precision': precision, })
+  else:
+    output_dim = 40
+    hidden_activation = 'tanh'
+    dropout_0 = 0.5
+    layer_1 = 350
+    dropout_1 = 0.5
+    layer_2 = 100
+    dropout_2 = 0.0
+    layer_3 = 100
+    dropout_3 = 0.0
+    output_activation = 'sigmoid'
+    model1 = Sequential()
+    model1.add(Embedding(input_dim=vocab_size, output_dim=output_dim, input_length=input_length))
+    model1.add(Flatten())
+    model1.add(Dropout(dropout_0))
+    model1.add(Dense(layer_1, activation=hidden_activation))
+    model1.add(Dropout(dropout_1))
+    # model1.add(Dense(layer_2, activation=hidden_activation))
+    # model1.add(Dropout(dropout_2))
+    # model1.add(Dense(layer_3, activation=hidden_activation))
+    # model.add(Dropout(dropout_3))
+    model1.add(Dense(1, activation=output_activation))
+    opt_type = "Adam"
+    lr = 0.001
+    beta_1 = 0.9
+    beta_2 = 0.999
+    epsilon = 1e-03
+    amsgrad = True
+    opt = Adam(lr=lr, beta_1=beta_1, beta_2=beta_2, epsilon=epsilon, amsgrad=amsgrad)
+    model1.compile(loss='binary_crossentropy',
+                   optimizer=opt,
+                   metrics=['accuracy', f1, precision, recall])
+    print(str(vocab_size), str(output_dim), str(input_length))
+    batch_size = 128
+    epochs = 199
+    earlyStopping = False
+    checkpoint_file_path = "" + hidden_activation + baseFileName + "-best_model.hdf5"
+    if prefix != "":
+      checkpoint_file_path = prefix + "-" + checkpoint_file_path
+    if earlyStopping == True:  # simple early stopping
+      # simple early stopping
+      es = EarlyStopping(monitor="val_loss", mode='min', verbose=1, patience=2)  # val_loss , patience=1
+      mc = ModelCheckpoint(checkpoint_file_path, monitor="val_loss", mode='min', save_best_only=True, verbose=1)
+      history = model1.fit(x_train, y_train,
+                           batch_size=batch_size,
+                           callbacks=[es, mc],
+                           epochs=epochs,
+                           verbose=1,
+                           validation_data=(x_validation, y_validation))
+      model1.load_weights(checkpoint_file_path)
+    else:
+      history = model1.fit(x_train, y_train,
+                           batch_size=batch_size,
+                           epochs=epochs,
+                           verbose=1,
+                           validation_data=(x_validation, y_validation))
+    model1.save(checkpoint_file_path)
+  if isCreatePredictionForSimulator == True:
+    fileToPrintZ = open(predictionSamplesDFileBaseName + "1" + "-" + prefix + 'prediction.out', "w",
+                        encoding="utf-8")
+    for i in range(0,NUMBER_OF_PRED_FILE) :
+      gc.collect()
+      suffix = "p" + str(i)
+      Z_test_csv = pd.read_csv("partOfCsv_100/" + predictionSamplesDFileBaseName+"_"+suffix + ".csv", header=None)
+      Z_pred_keras = model1.predict(Z_test_csv)
+      for prediction in Z_pred_keras:
+        fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
+    fileToPrintZ.close()
+  y_pred_keras_validation = model1.predict(x_vtest).ravel()
+
+  y_pred_keras_test = []
+  # fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_keras)
+  # auc_keras = auc(fpr_keras, tpr_keras)
+  print("Tensorflow1", layer_str(output_dim, layer_1, layer_2, layer_3),
+        dropout_str(dropout_0, dropout_1, dropout_2, dropout_3),
+        opt_type + "(lr=" + str(lr) + ",beta_1=" + str(beta_1) + ",beta_2=" + str(beta_2) + ",epsilon=" + str(
+          epsilon) + ",amsgrad=" + str(amsgrad) + ")",
+        hidden_activation, output_activation, file=fileResults)
+  score = model1.evaluate(x_vtest, y_vtest, verbose=0)
+  out_str = "" + str(score[1]) + " " + str(score[2]) + " " + str(score[3]) + " " + str(score[4])
+  # out_str = "" + str(epochs) + " " + out_str
+  # out_str = "" + str(es.stopped_epoch) + " " + out_str
+  print('KerasValid1', score[1], score[2], score[3], score[4], file=fileResults)
+  i = 1
+  for x_test_i, y_test_i in zip(x_test, y_test):
+    y_pred_keras_test.append(model1.predict(x_test_i).ravel())
+    score = model1.evaluate(x_test_i, y_test_i, verbose=0)
+    # print(len(score), str(x_test_1.shape), str(y_test_1.shape), file=fileResults)
+    out_str = out_str + " " + str(score[1]) + " " + str(score[2]) + " " + str(score[3]) + " " + str(score[4])
+    print('KerasTest1' + str(i), score[1], score[2], score[3], score[4], file=fileResults)
+    i += 1
+  print(out_str, file=fileResults)
+   'hidden_activation' : 'relu',
+                           'output_activation' : 'sigmoid',
+                           'dropout_0' : 0.5,
+                           'dropout_1': 0.5,
+                           'dropout_2': 0.5,
+                           'dropout_3': 0.5,
+                           'layer_1': 1000,
+                           'layer_2': 1000,
+                           'layer_3': 1000,
+                           'opt_type' : "Adam",
+                           'lr' : 0.001,
+                           'beta_1' : 0.9,
+                           'beta_2' : 0.999,
+                           'epsilon' : 1e-03,
+                           'amsgrad' : True'''
+  if isTensorflow2InputFile == True and tensorflow2InputFile != "":
+    model2 = load_model(tensorflow2InputFile, custom_objects={'f1': f1, 'recall': recall, 'precision': precision, })
+  else:
+    output_dim = 100
+    hidden_activation = 'relu'
+    dropout_0 = 0.5
+    layer_1 = 1000
+    dropout_1 = 0.5
+    layer_2 = 1000
+    dropout_2 = 0.5
+    layer_3 = 1000
+    dropout_3 = 0.5
+    output_activation = 'sigmoid'
+    model2 = Sequential()
+    model2.add(Embedding(input_dim=vocab_size, output_dim=output_dim, input_length=input_length))
+    model2.add(Flatten())
+    model2.add(Dropout(dropout_0))
+    model2.add(Dense(layer_1, activation=hidden_activation))
+    model2.add(Dropout(dropout_1))
+    # model2.add(Dense(layer_2, activation=hidden_activation))
+    # model2.add(Dropout(dropout_2))
+    # model2.add(Dense(layer_3, activation=hidden_activation))
+    # model2.add(Dropout(dropout_3))
+    model2.add(Dense(1, activation=output_activation))
+    opt_type = "Adam"
+    lr = 0.001
+    beta_1 = 0.9
+    beta_2 = 0.999
+    epsilon = 1e-03
+    amsgrad = True
+    opt = Adam(lr=lr, beta_1=beta_1, beta_2=beta_2, epsilon=epsilon, amsgrad=amsgrad)
+    model2.compile(loss='binary_crossentropy',
+                   optimizer=opt,
+                   metrics=['accuracy', f1, precision, recall])
+    print(str(vocab_size), str(output_dim), str(input_length))
+    batch_size = 128
+    epochs = 50
+    earlyStopping = True
+    checkpoint_file_path = ""+ hidden_activation + baseFileName + "-best_model.hdf5"
+    if prefix != "":
+      checkpoint_file_path = prefix + "-" + checkpoint_file_path
+    if earlyStopping == True:  # simple early stopping
+      # simple early stopping
+      es = EarlyStopping(monitor="val_loss", mode='min', verbose=1, patience=2)  # val_loss , patience=1
+      mc = ModelCheckpoint(checkpoint_file_path, monitor="val_loss", mode='min', save_best_only=True, verbose=1)
+      history = model2.fit(x_train, y_train,
+                           batch_size=batch_size,
+                           callbacks=[es, mc],
+                           epochs=epochs,
+                           verbose=1,
+                           validation_data=(x_validation, y_validation))
+      model2.load_weights(checkpoint_file_path)
+    else:
+      history = model2.fit(x_train, y_train,
+                           batch_size=batch_size,
+                           epochs=epochs,
+                           verbose=1,
+                           validation_data=(x_validation, y_validation))
+    model2.save(checkpoint_file_path)
+  if isCreatePredictionForSimulator == True:
+    fileToPrintZ = open(predictionSamplesDFileBaseName + "2" + "-" + prefix + 'prediction.out', "w",
+                        encoding="utf-8")
+    for i in range(0,NUMBER_OF_PRED_FILE) :
+      gc.collect()
+      suffix = "p"+str(i)
+      Z_test_csv = pd.read_csv("partOfCsv_100/" + predictionSamplesDFileBaseName+"_"+suffix + ".csv", header=None)
+      Z_pred_keras2 = model2.predict(Z_test_csv)
+      for prediction in Z_pred_keras2:
+        fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
+    fileToPrintZ.close()
+  '''
+  y_pred_keras2_validation = model2.predict(x_vtest).ravel()
+
+  y_pred_keras2_test = []
+  # fpr_keras2, tpr_keras2, thresholds_keras2 = roc_curve(y_test, y_pred_keras2)
+  # auc_keras2 = auc(fpr_keras2, tpr_keras2)
+
+  score = model2.evaluate(x_vtest, y_vtest, verbose=0)
+  out_str = "" + str(score[1]) + " " + str(score[2]) + " " + str(score[3]) + " " + str(score[4])
+  # out_str = "" + str(epochs) + " " + out_str
+  # out_str = "" + str(es.stopped_epoch) + " " + out_str
+  print('KerasValid2', score[1], score[2], score[3], score[4], file=fileResults)
+  i = 1
+  for x_test_i, y_test_i in zip(x_test, y_test):
+    y_pred_keras2_test.append(model2.predict(x_test_i).ravel())
+    score = model2.evaluate(x_test_i, y_test_i, verbose=0)
+    # print(len(score), str(x_test_1.shape), str(y_test_1.shape), file=fileResults)
+    out_str = out_str + " " + str(score[1]) + " " + str(score[2]) + " " + str(score[3]) + " " + str(score[4])
+    print('KerasTest2' + str(i), score[1], score[2], score[3], score[4], file=fileResults)
+    i += 1
+  print(out_str, file=fileResults)
+  
+
+  if isCreatePredictionForSimulator == True:
+    pred_array_Z = np.row_stack([Z_pred_keras, Z_pred_keras2, Z_pred_rf])
+    pred_array_Z = pred_array_Z.mean(axis=0)
+    pred_array_Z = pred_array_Z.round()
+    fileToPrintZ = open(predictionSamplesDFileBaseName + prefix + 'prediction.out', "w", encoding="utf-8")
+    for prediction in pred_array_Z:
+      fileToPrintZ.write('' + str(int(prediction)) + '\n')
+    fileToPrintZ.close()
+  pred_array_valid = np.row_stack([y_pred_keras_validation, y_pred_keras2_validation, y_pred_rf_valid2])
+  pred_array_valid = pred_array_valid.mean(axis=0)
+  pred_array_valid = pred_array_valid.round()
+  accuracy_voting_valid = accuracy_score(y_vtest, pred_array_valid)
+  f1_voting_valid = f1_score(y_vtest, pred_array_valid)
+  precision_voting_valid = precision_score(y_vtest, pred_array_valid)
+  recall_voting_valid = recall_score(y_vtest, pred_array_valid)
+  # fpr_voting_valid, tpr_voting_valid, thresholds_voting_valid = roc_curve(y_vtest, pred_array_valid)
+  # auc_voting_valid = auc(fpr_voting_valid, tpr_voting_valid)
+  outstr = "" + str(accuracy_voting_valid) + " " + str(f1_voting_valid) + " " + str(precision_voting_valid) + " " + str(
+    recall_voting_valid)
+  print('VotingValid', accuracy_voting_valid, f1_voting_valid, precision_voting_valid, recall_voting_valid,
+        file=fileResults)
+  i = 0
+  for x_test_i, y_test_i in zip(x_test, y_test):
+    # print(str(len(y_pred_keras_test[i])), str(len(y_pred_keras2_test[i])), str(len(y_pred_rf2[i])), file=fileResults)
+    pred_array = np.row_stack([y_pred_keras_test[i], y_pred_keras2_test[i], y_pred_rf2[i]])
+    pred_array = pred_array.mean(axis=0)
+    pred_array = pred_array.round()
+    accuracy_voting = accuracy_score(y_test_i, pred_array)
+    f1_voting = f1_score(y_test_i, pred_array)
+    precision_voting = precision_score(y_test_i, pred_array)
+    recall_voting = recall_score(y_test_i, pred_array)
+    # fpr_voting, tpr_voting, thresholds_voting = roc_curve(y_test_i, pred_array)
+    # auc_voting = auc(fpr_voting, tpr_voting)
+    outstr = outstr + " " + str(accuracy_voting) + " " + str(f1_voting) + " " + str(precision_voting) + " " + str(
+      recall_voting)
+    i = i + 1
+    print('VotingTest' + str(i), accuracy_voting, f1_voting, precision_voting, recall_voting, file=fileResults)
+  print(outstr, file=fileResults)
+
+  fileResults.close()
+
+  
+  plt.figure(1)
+  plt.plot([0, 1], [0, 1], 'k--')
+  plt.plot(fpr_keras, tpr_keras, label='Keras (area = {:.25f})'.format(auc_keras))
+  plt.plot(fpr_xgb, tpr_xgb, label='XGB (area = {:.25f})'.format(auc_xgb))
+  plt.plot(fpr_dt, tpr_dt, label='DT (area = {:.25f})'.format(auc_dt))
+  plt.plot(fpr_rf, tpr_rf, label='RF (area = {:.25f})'.format(auc_rf))
+  plt.plot(fpr_lr, tpr_lr, label='LR (area = {:.25f})'.format(auc_lr))
+  plt.xlabel('False positive rate')
+  plt.ylabel('True positive rate')
+  plt.title('ROC curve')
+  plt.legend(loc='best')
+  plt.savefig('roc1.png')
+  # Zoom in view of the upper left corner.
+  plt.figure(2)
+  plt.xlim(0, 0.2)
+  plt.ylim(0.8, 1)
+  plt.plot([0, 1], [0, 1], 'k--')
+  plt.plot(fpr_keras, tpr_keras, label='Keras (area = {:.25f})'.format(auc_keras))
+  plt.plot(fpr_xgb, tpr_xgb, label='XGB (area = {:.25f})'.format(auc_xgb))
+  plt.plot(fpr_dt, tpr_dt, label='DT (area = {:.25f})'.format(auc_dt))
+  plt.plot(fpr_rf, tpr_rf, label='RF (area = {:.25f})'.format(auc_rf))
+  plt.plot(fpr_lr, tpr_lr, label='LR (area = {:.25f})'.format(auc_lr))
+  plt.xlabel('False positive rate')
+  plt.ylabel('True positive rate')
+  plt.title('ROC curve (zoomed in at top left)')
+  plt.legend(loc='best')
+  plt.savefig('roc2.png')
+  '''
 

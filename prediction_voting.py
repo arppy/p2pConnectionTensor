@@ -37,7 +37,7 @@ with open(tensorflow1InputFile) as f2:
     predictionsTF1.append(int(float(str(l2).split('\n')[0])))
 
 predictionsTF2 = []
-with open(tensorflow1InputFile) as f3:
+with open(tensorflow2InputFile) as f3:
   for l3 in f3:
     predictionsTF2.append(int(float(str(l3).split('\n')[0])))
 
