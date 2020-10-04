@@ -25,6 +25,7 @@ import pandas as pd
 import numpy as np
 import sys
 import gc
+import argparse
 
 import matplotlib.pyplot as plt
 
@@ -82,44 +83,62 @@ def layer_str(embeding_output, *layers):
   return ret_layer_str
 
 
-baseFileName = "1010rr1101rr10"
-core = "2"
-prefix = ""
-isTestV4 = False
-isCreatePredictionForSimulator = False
-predictionSamplesDFileBaseName = "1010rr1101rr10network100000"
-isRandomForestInputFile = False
-randomForestInputFile = ""
-isTensorflow1InputFile = False
-tensorflow1InputFile = ""
-isTensorflow2InputFile = False
-tensorflow2InputFile = ""
-testSinceSet = 0
-NUMBER_OF_PRED_FILE = 1227
-if len(sys.argv) > 1:
-  baseFileName = str(sys.argv[1])
-if len(sys.argv) > 2:
-  core = str(int(sys.argv[2]) - 1)
-if len(sys.argv) > 3:
-  prefix = str(sys.argv[3])
-if len(sys.argv) > 4:
-  isTestV4 = True
-  testSinceSet = int(sys.argv[4]) - 1
-if len(sys.argv) > 5:
-  if str(sys.argv[5]) == "0" or str(sys.argv[5]) == "False" or str(sys.argv[5]) == "false" :
-    isCreatePredictionForSimulator = False
-  else :
-    isCreatePredictionForSimulator = True
-    predictionSamplesDFileBaseName = str(sys.argv[5])
-if len(sys.argv) > 6:
-  isTensorflow1InputFile = True
-  tensorflow1InputFile = str(sys.argv[6])
-if len(sys.argv) > 7:
-  isTensorflow2InputFile = True
-  tensorflow2InputFile = str(sys.argv[7])
-if len(sys.argv) > 8:
-  NUMBER_OF_PRED_FILE = int(sys.argv[8])
+##
+##
+###
+###
+##
 
+randomForestInputFile = ""
+tensorflow2InputFile = ""
+tensorflow1InputFile = ""
+
+parser=argparse.ArgumentParser()
+parser.add_argument('--core', default=1, help='the core that used for tensorflow')
+parser.add_argument('--basename', default="1010rr1101rr10", help='base name of dataset')
+parser.add_argument('--prefix', default="", help='prefix for output filename')
+parser.add_argument('--test_since_set', default=False, help='start the test from the specified test set with a number')
+parser.add_argument('--pred_file_name', default=False, help='make prediction for the given file suffix')
+parser.add_argument('--pred_suffix', default="", help='make prediction for the given suffix')
+parser.add_argument('--number_of_pred_file', default=0, help='number of prediction files')
+parser.add_argument('--random_forest', default=False, help='open random forest from file')
+parser.add_argument('--tensor_flow_input_file1', default=False, help='open deep network from file1')
+parser.add_argument('--tensor_flow_input_file2', default=False, help='open deep network from file2')
+
+args=parser.parse_args()
+
+core = int(args.core)
+baseFileName = str(args.basename)
+prefix = str(args.prefix)
+if str(args.test_since_set) != "False" and str(args.pred_file_name) != "false":
+  isTestV4 = True
+  testSinceSet = int(args.test_since_set) - 1
+else :
+  isTestV4 = False
+  testSinceSet = 0
+if str(args.pred_file_name) != "False" and str(args.pred_file_name) != "false":
+  isCreatePredictionForSimulator = True
+  predictionSamplesDFileBaseName = str(args.pred_file_name)
+  predictionSamplesDFileBaseName_suffix =  predictionSamplesDFileBaseName.split('x')[1]
+else:
+  isCreatePredictionForSimulator = False
+predSuffix = str(args.pred_suffix)
+NUMBER_OF_PRED_FILE = int(args.number_of_pred_file)
+if str(args.random_forest) != "False" and str(args.random_forest) != "false" :
+  isRandomForestInputFile = True
+  randomForestInputFile = str(args.random_forest)
+else:
+  isTensorflow1InputFile = False
+if str(args.tensor_flow_input_file1) != "False" and str(args.tensor_flow_input_file1) != "false" :
+  isTensorflow1InputFile = True
+  tensorflow1InputFile = str(args.tensor_flow_input_file1)
+else:
+  isRandomForestInputFile = False
+if str(args.tensor_flow_input_file2) != "False" and str(args.tensor_flow_input_file2) != "false":
+  isTensorflow2InputFile = True
+  tensorflow2InputFile = str(args.tensor_flow_input_file2)
+else:
+  isTensorflow2InputFile = False
 
 os.environ["CUDA_VISIBLE_DEVICES"] = core
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -299,7 +318,6 @@ with sess.as_default():
                           'beta_2' : 0.999,
                           'epsilon' : 1e-03,
                           'amsgrad' : True'''
-  '''
   if isTensorflow1InputFile == True and tensorflow1InputFile != "":
     model1 = load_model(tensorflow1InputFile, custom_objects={'f1': f1, 'recall': recall, 'precision': precision, })
   else:
@@ -364,8 +382,8 @@ with sess.as_default():
                         encoding="utf-8")
     for i in range(0,NUMBER_OF_PRED_FILE) :
       gc.collect()
-      suffix = "p" + str(i)
-      Z_test_csv = pd.read_csv("partOfCsv_100/" + predictionSamplesDFileBaseName+"_"+suffix + ".csv", header=None)
+      fileNumberSuffix = "p" + str(i)
+      Z_test_csv = pd.read_csv("partOfCsv_" + predSuffix +"/" + predictionSamplesDFileBaseName +"_" + fileNumberSuffix + ".csv", header=None)
       Z_pred_keras = model1.predict(Z_test_csv)
       for prediction in Z_pred_keras:
         fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
@@ -394,6 +412,7 @@ with sess.as_default():
     print('KerasTest1' + str(i), score[1], score[2], score[3], score[4], file=fileResults)
     i += 1
   print(out_str, file=fileResults)
+  '''
    'hidden_activation' : 'relu',
                            'output_activation' : 'sigmoid',
                            'dropout_0' : 0.5,
@@ -473,8 +492,8 @@ with sess.as_default():
                         encoding="utf-8")
     for i in range(0,NUMBER_OF_PRED_FILE) :
       gc.collect()
-      suffix = "p"+str(i)
-      Z_test_csv = pd.read_csv("partOfCsv_100/" + predictionSamplesDFileBaseName+"_"+suffix + ".csv", header=None)
+      fileNumberSuffix = "p" + str(i)
+      Z_test_csv = pd.read_csv("partOfCsv_100/" + predictionSamplesDFileBaseName +"_" + fileNumberSuffix + ".csv", header=None)
       Z_pred_keras2 = model2.predict(Z_test_csv)
       for prediction in Z_pred_keras2:
         fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
