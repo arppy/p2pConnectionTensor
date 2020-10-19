@@ -100,7 +100,7 @@ parser.add_argument('--tensor_flow_input_file2', default=False, help='open deep 
 
 args=parser.parse_args()
 
-core = int(args.core)
+core = str(args.core)
 baseFileName = str(args.basename)
 prefix = str(args.prefix)
 if str(args.test_since_set) != "False" and str(args.pred_file_name) != "false":
@@ -120,12 +120,12 @@ if str(args.random_forest) != "False" and str(args.random_forest) != "false" :
   isRandomForestInputFile = True
   randomForestInputFile = str(args.random_forest)
 else:
-  isTensorflow1InputFile = False
+  isRandomForestInputFile = False
 if str(args.tensor_flow_input_file1) != "False" and str(args.tensor_flow_input_file1) != "false" :
   isTensorflow1InputFile = True
   tensorflow1InputFile = str(args.tensor_flow_input_file1)
 else:
-  isRandomForestInputFile = False
+  isTensorflow1InputFile = False
 if str(args.tensor_flow_input_file2) != "False" and str(args.tensor_flow_input_file2) != "false":
   isTensorflow2InputFile = True
   tensorflow2InputFile = str(args.tensor_flow_input_file2)
