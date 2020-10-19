@@ -101,7 +101,6 @@ parser.add_argument('--test_since_set', default=False, help='start the test from
 parser.add_argument('--pred_file_name', default=False, help='make prediction for the given file suffix')
 parser.add_argument('--pred_suffix', default="", help='make prediction for the given suffix')
 parser.add_argument('--number_of_pred_file', default=0, help='number of prediction files')
-parser.add_argument('--random_forest', default=False, help='open random forest from file')
 parser.add_argument('--tensor_flow_input_file1', default=False, help='open deep network from file1')
 parser.add_argument('--tensor_flow_input_file2', default=False, help='open deep network from file2')
 
@@ -124,16 +123,11 @@ else:
   isCreatePredictionForSimulator = False
 predSuffix = str(args.pred_suffix)
 NUMBER_OF_PRED_FILE = int(args.number_of_pred_file)
-if str(args.random_forest) != "False" and str(args.random_forest) != "false" :
-  isRandomForestInputFile = True
-  randomForestInputFile = str(args.random_forest)
-else:
-  isTensorflow1InputFile = False
 if str(args.tensor_flow_input_file1) != "False" and str(args.tensor_flow_input_file1) != "false" :
   isTensorflow1InputFile = True
   tensorflow1InputFile = str(args.tensor_flow_input_file1)
 else:
-  isRandomForestInputFile = False
+  isTensorflow1InputFile = False
 if str(args.tensor_flow_input_file2) != "False" and str(args.tensor_flow_input_file2) != "false":
   isTensorflow2InputFile = True
   tensorflow2InputFile = str(args.tensor_flow_input_file2)
@@ -493,7 +487,7 @@ with sess.as_default():
     for i in range(0,NUMBER_OF_PRED_FILE) :
       gc.collect()
       fileNumberSuffix = "p" + str(i)
-      Z_test_csv = pd.read_csv("partOfCsv_100/" + predictionSamplesDFileBaseName +"_" + fileNumberSuffix + ".csv", header=None)
+      Z_test_csv = pd.read_csv("partOfCsv_" + predSuffix +"/" + predictionSamplesDFileBaseName +"_" + fileNumberSuffix + ".csv", header=None)
       Z_pred_keras2 = model2.predict(Z_test_csv)
       for prediction in Z_pred_keras2:
         fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')

@@ -120,12 +120,12 @@ if str(args.random_forest) != "False" and str(args.random_forest) != "false" :
   isRandomForestInputFile = True
   randomForestInputFile = str(args.random_forest)
 else:
-  isTensorflow1InputFile = False
+  isRandomForestInputFile = False
 if str(args.tensor_flow_input_file1) != "False" and str(args.tensor_flow_input_file1) != "false" :
   isTensorflow1InputFile = True
   tensorflow1InputFile = str(args.tensor_flow_input_file1)
 else:
-  isRandomForestInputFile = False
+  isTensorflow1InputFile = False
 if str(args.tensor_flow_input_file2) != "False" and str(args.tensor_flow_input_file2) != "false":
   isTensorflow2InputFile = True
   tensorflow2InputFile = str(args.tensor_flow_input_file2)
