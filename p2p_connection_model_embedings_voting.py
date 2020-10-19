@@ -100,7 +100,7 @@ parser.add_argument('--tensor_flow_input_file2', default=False, help='open deep 
 
 args=parser.parse_args()
 
-core = int(args.core)
+core = str(args.core)
 baseFileName = str(args.basename)
 prefix = str(args.prefix)
 if str(args.test_since_set) != "False" and str(args.pred_file_name) != "false":
