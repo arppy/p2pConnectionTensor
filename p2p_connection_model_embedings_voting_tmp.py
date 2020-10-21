@@ -121,7 +121,6 @@ if str(args.pred_file_name) != "False" and str(args.pred_file_name) != "false":
   predictionSamplesDFileBaseName_suffix =  predictionSamplesDFileBaseName.split('x')[1]
 else:
   isCreatePredictionForSimulator = False
-predSuffix = str(args.pred_suffix)
 NUMBER_OF_PRED_FILE = int(args.number_of_pred_file)
 if str(args.tensor_flow_input_file1) != "False" and str(args.tensor_flow_input_file1) != "false" :
   isTensorflow1InputFile = True
@@ -136,7 +135,7 @@ else:
 
 print("PRINT","core",core,"baseFileName",baseFileName,"prefix",prefix,"isTestV4",isTestV4,"testSinceSet",testSinceSet,
       "isCreatePredictionForSimulator",isCreatePredictionForSimulator,"predictionSamplesDFileBaseName",predictionSamplesDFileBaseName,
-      "predictionSamplesDFileBaseName_suffix",predictionSamplesDFileBaseName_suffix,"predSuffix",predSuffix,
+      "predictionSamplesDFileBaseName_suffix",predictionSamplesDFileBaseName_suffix,
       "NUMBER_OF_PRED_FILE",NUMBER_OF_PRED_FILE,"isTensorflow1InputFile",isTensorflow1InputFile,
       "isTensorflow1InputFile", isTensorflow1InputFile, "isTensorflow2InputFile", isTensorflow2InputFile,
       "tensorflow2InputFile",tensorflow2InputFile)
@@ -386,7 +385,7 @@ with sess.as_default():
     for i in range(0,NUMBER_OF_PRED_FILE) :
       gc.collect()
       fileNumberSuffix = "p" + str(i)
-      Z_test_csv = pd.read_csv("partOfCsv_" + predSuffix +"/" + predictionSamplesDFileBaseName +"_" + fileNumberSuffix + ".csv", header=None)
+      Z_test_csv = pd.read_csv("partOfCsv_" + predictionSamplesDFileBaseName_suffix +"/" + predictionSamplesDFileBaseName +"_" + fileNumberSuffix + ".csv", header=None)
       Z_pred_keras = model1.predict(Z_test_csv)
       for prediction in Z_pred_keras:
         fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
@@ -496,7 +495,7 @@ with sess.as_default():
     for i in range(0,NUMBER_OF_PRED_FILE) :
       gc.collect()
       fileNumberSuffix = "p" + str(i)
-      Z_test_csv = pd.read_csv("partOfCsv_" + predSuffix +"/" + predictionSamplesDFileBaseName +"_" + fileNumberSuffix + ".csv", header=None)
+      Z_test_csv = pd.read_csv("partOfCsv_" + predictionSamplesDFileBaseName_suffix +"/" + predictionSamplesDFileBaseName +"_" + fileNumberSuffix + ".csv", header=None)
       Z_pred_keras2 = model2.predict(Z_test_csv)
       for prediction in Z_pred_keras2:
         fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
