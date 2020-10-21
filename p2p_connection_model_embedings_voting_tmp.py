@@ -139,7 +139,7 @@ print("PRINT","core",core,"baseFileName",baseFileName,"prefix",prefix,"isTestV4"
       "NUMBER_OF_PRED_FILE",NUMBER_OF_PRED_FILE,"isTensorflow1InputFile",isTensorflow1InputFile,
       "tensorflow1InputFile", tensorflow1InputFile, "isTensorflow2InputFile", isTensorflow2InputFile,
       "tensorflow2InputFile",tensorflow2InputFile)
-quit()
+#quit()
 
 os.environ["CUDA_VISIBLE_DEVICES"] = core
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
