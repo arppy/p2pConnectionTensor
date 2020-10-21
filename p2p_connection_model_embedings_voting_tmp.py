@@ -137,7 +137,7 @@ print("PRINT","core",core,"baseFileName",baseFileName,"prefix",prefix,"isTestV4"
       "isCreatePredictionForSimulator",isCreatePredictionForSimulator,"predictionSamplesDFileBaseName",predictionSamplesDFileBaseName,
       "predictionSamplesDFileBaseName_suffix",predictionSamplesDFileBaseName_suffix,
       "NUMBER_OF_PRED_FILE",NUMBER_OF_PRED_FILE,"isTensorflow1InputFile",isTensorflow1InputFile,
-      "isTensorflow1InputFile", isTensorflow1InputFile, "isTensorflow2InputFile", isTensorflow2InputFile,
+      "tensorflow1InputFile", tensorflow1InputFile, "isTensorflow2InputFile", isTensorflow2InputFile,
       "tensorflow2InputFile",tensorflow2InputFile)
 quit()
 
