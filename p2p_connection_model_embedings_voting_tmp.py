@@ -134,8 +134,17 @@ if str(args.tensor_flow_input_file2) != "False" and str(args.tensor_flow_input_f
 else:
   isTensorflow2InputFile = False
 
+print("PRINT","core",core,"baseFileName",baseFileName,"prefix",prefix,"isTestV4",isTestV4,"testSinceSet",testSinceSet,
+      "isCreatePredictionForSimulator",isCreatePredictionForSimulator,"predictionSamplesDFileBaseName",predictionSamplesDFileBaseName,
+      "predictionSamplesDFileBaseName_suffix",predictionSamplesDFileBaseName_suffix,"predSuffix",predSuffix,
+      "NUMBER_OF_PRED_FILE",NUMBER_OF_PRED_FILE,"isTensorflow1InputFile",isTensorflow1InputFile,
+      "isTensorflow1InputFile", isTensorflow1InputFile, "isTensorflow2InputFile", isTensorflow2InputFile,
+      "tensorflow2InputFile",tensorflow2InputFile)
+quit()
+
 os.environ["CUDA_VISIBLE_DEVICES"] = core
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 fileResults = open(prefix + "" + baseFileName + ".results", "w")
 
 tf.reset_default_graph()
