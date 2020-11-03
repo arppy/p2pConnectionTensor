@@ -320,6 +320,7 @@ with sess.as_default():
                           'beta_2' : 0.999,
                           'epsilon' : 1e-03,
                           'amsgrad' : True'''
+  '''
   if isTensorflow1InputFile == True and tensorflow1InputFile != "":
     model1 = load_model(tensorflow1InputFile, custom_objects={'f1': f1, 'recall': recall, 'precision': precision, })
   else:
@@ -354,7 +355,7 @@ with sess.as_default():
     model1.compile(loss='binary_crossentropy',
                    optimizer=opt,
                    metrics=['accuracy', f1, precision, recall])
-    print(str(vocab_size), str(output_dim), str(input_length))
+    #print(str(vocab_size), str(output_dim), str(input_length))
     batch_size = 128
     epochs = 199
     earlyStopping = False
@@ -395,11 +396,11 @@ with sess.as_default():
   y_pred_keras_test = []
   # fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_keras)
   # auc_keras = auc(fpr_keras, tpr_keras)
-  print("Tensorflow1", layer_str(output_dim, layer_1, layer_2, layer_3),
-        dropout_str(dropout_0, dropout_1, dropout_2, dropout_3),
-        opt_type + "(lr=" + str(lr) + ",beta_1=" + str(beta_1) + ",beta_2=" + str(beta_2) + ",epsilon=" + str(
-          epsilon) + ",amsgrad=" + str(amsgrad) + ")",
-        hidden_activation, output_activation, file=fileResults)
+  #print("Tensorflow1", layer_str(output_dim, layer_1, layer_2, layer_3),
+  #      dropout_str(dropout_0, dropout_1, dropout_2, dropout_3),
+  #      opt_type + "(lr=" + str(lr) + ",beta_1=" + str(beta_1) + ",beta_2=" + str(beta_2) + ",epsilon=" + str(
+  #        epsilon) + ",amsgrad=" + str(amsgrad) + ")",
+  #      hidden_activation, output_activation, file=fileResults)
   score = model1.evaluate(x_vtest, y_vtest, verbose=0)
   out_str = "" + str(score[1]) + " " + str(score[2]) + " " + str(score[3]) + " " + str(score[4])
   # out_str = "" + str(epochs) + " " + out_str
@@ -414,6 +415,7 @@ with sess.as_default():
     print('KerasTest1' + str(i), score[1], score[2], score[3], score[4], file=fileResults)
     i += 1
   print(out_str, file=fileResults)
+  '''
   '''
    'hidden_activation' : 'relu',
                            'output_activation' : 'sigmoid',
@@ -464,7 +466,7 @@ with sess.as_default():
     model2.compile(loss='binary_crossentropy',
                    optimizer=opt,
                    metrics=['accuracy', f1, precision, recall])
-    print(str(vocab_size), str(output_dim), str(input_length))
+    #print(str(vocab_size), str(output_dim), str(input_length))
     batch_size = 128
     epochs = 50
     earlyStopping = True
