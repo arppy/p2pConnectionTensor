@@ -46,13 +46,13 @@ else:
   isRandomForestInputFile = False
 NUMBER_OF_PRED_FILE = int(args.number_of_pred_file)
 
-fileResults = open("rf"+prefix+""+baseFileName + ".results", "w")
+#fileResults = open("rf"+prefix+""+baseFileName + ".results", "w")
 
 np.random.seed(0)
 X, y = load_svmlight_file("dataset/" + baseFileName + ".svmlight")
 X_df = pd.DataFrame(X.todense())
 y_df = pd.DataFrame(y)
-print(str(X_df.shape), str(y_df.shape), file=fileResults)
+#print(str(X_df.shape), str(y_df.shape), file=fileResults)
 # NUMBER_OF_TRAINING_SET_SIZE = 178778 # v1
 # NUMBER_OF_TRAINING_SET_SIZE = 178684 # v2
 NUMBER_OF_TRAINING_SET_SIZE = 187954  # v3
@@ -81,7 +81,7 @@ x_vtest = x_validation_test[next_msk]
 y_validation = y_validation_test[~next_msk]
 x_validation = x_validation_test[~next_msk]
 
-print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_vtest.shape), str(x_validation.shape), file=fileResults)
+#print(str(NUMBER_OF_TRAINING_SET_SIZE), str(x_train.shape), str(x_vtest.shape), str(x_validation.shape), file=fileResults)
 NUMBER_OF_TEST_SET_SIZE = X_df.shape[0] - NUMBER_OF_TRAINING_SET_SIZE
 x_df_test = X_df.tail(NUMBER_OF_TEST_SET_SIZE)
 y_df_test = y_df.tail(NUMBER_OF_TEST_SET_SIZE)
@@ -228,4 +228,4 @@ for x_test_i, y_test_i in zip(x_test, y_test):
   i += 1
 print(outstr, file=fileResults)
 '''
-fileResults.close()
+#fileResults.close()

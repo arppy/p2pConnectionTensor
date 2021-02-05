@@ -319,7 +319,7 @@ with sess.as_default():
                           'beta_1' : 0.9,
                           'beta_2' : 0.999,
                           'epsilon' : 1e-03,
-                          'amsgrad' : True'''
+                          'amsgrad' : True
   '''
   if isTensorflow1InputFile == True and tensorflow1InputFile != "":
     model1 = load_model(tensorflow1InputFile, custom_objects={'f1': f1, 'recall': recall, 'precision': precision, })
@@ -391,6 +391,7 @@ with sess.as_default():
       for prediction in Z_pred_keras:
         fileToPrintZ.write('' + str(int(round(prediction[0]))) + '\n')
     fileToPrintZ.close()
+  '''
   y_pred_keras_validation = model1.predict(x_vtest).ravel()
 
   y_pred_keras_test = []
